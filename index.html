@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemi Mahal ve İş Takip Sistemi</title>
+    <!-- Tailwind CSS Tasarım Kütüphanesi -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase Kütüphanesi -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        #ayrac {
+            cursor: col-resize;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col overflow-hidden">
+
+    <div id="anaKapsayici" class="flex h-full w-full relative">
+        
+        <!-- SOL PANEL: Mahaller ve Akordeon -->
+        <div id="solPanel" class="p-4 border-r border-gray-300 bg-white overflow-y-auto flex flex-col" style="width: 40%;">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">Gemi Mahalleri</h2>
+            
+            <!-- Mahal Arama -->
+            <div class="mb-4">
+                <input 
+                    type="text" 
+                    id="solAramaInput" 
+                    placeholder="Mahal Ara..." 
+                    class="border p-2 rounded w-full outline-none focus:border-blue-500"
+                    oninput="filtreleMahaller()"
+                />
+            </div>
+
+            <!-- Yeni Mahal Ekleme -->
+            <div class="flex gap-2 mb-4">
+                <input 
+                    type="text" 
+                    id="yeniMahalInput" 
+                    placeholder="Yeni mahal adı..." 
+                    class="border p-2 rounded w-full outline-none focus:border-blue-500"
+                />
+                <button onclick="mahalEkle()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded font-bold">+</button>
+            </div>
+
+            <!-- Mahal Listesi -->
+            <div id="mahalListesi" class="flex-1 overflow-y-auto"></div>
+        </div>
+
+        <!-- ORTA SÜRÜKLEME ÇUBUĞU -->
+        <div id="ayrac" class="w-2 bg-gray-200 hover:bg-blue-400 transition-colors flex items-center justify-center">
+            <div class="w-1 h-8 bg-gray-400 rounded"></div>
+        </div>
+
+        <!-- SAĞ PANEL: İş Ekleme ve Detaylı Arama -->
+        <div id="sagPanel" class="p-4 bg-white overflow-y-auto flex flex-col flex-1">
+            <div id="sagPanelIcerik" class="flex flex-col h-full">
+                <div class="flex items-center justify-center h-full text-gray-400">
+                    İşlem yapmak için sol panelden bir mahal seçin.
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- İŞ DÜZENLEME MODALI -->
+    <div id="duzenleModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg w-96 shadow-xl">
+            <h3 class="text-lg font-bold mb-4 text-gray-800">İş Kaydını Düzenle</h3>
+            <input type="hidden" id="duzenleId" />
+            
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Tarih</label>
+            <input type="date" id="duzenleTarih" class="border p-2 rounded w-full mb-3 outline-none" />
+            
+            <label class="block text-xs font-semibold text-gray-600 mb-1">İşi Yapan Kişi</label>
+            <input type="text" id="duzenleYapanKisi" placeholder="İşi yapan kişi..." class="border p-2 rounded w-full mb-3 outline-none" />
+
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Yapılan İş</label>
+            <textarea id="duzenleYapilanIs" placeholder="Yapılan iş..." class="border p-2 rounded w-full mb-4 outline-none h-24"></textarea>
+            
+            <div class="flex justify-end gap-2">
+                <button onclick="modalKapat()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm font-bold">İptal</button>
+                <button onclick="duzenlemeKaydet()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-bold">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAHAL DÜZENLEME MODALI -->
+    <div id="mahalDuzenleModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg w-96 shadow-xl">
+            <h3 class="text-lg font-bold mb-4 text-gray-800">Mahal Adını Düzenle</h3>
+            <input type="hidden" id="mahalDuzenleId" />
+            
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Mahal Adı</label>
+            <input type="text" id="mahalDuzenleAdi" class="border p-2 rounded w-full mb-4 outline-none" />
+            
+            <div class="flex justify-end gap-2">
+                <button onclick="mahalModalKapat()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm font-bold">İptal</button>
+                <button onclick="mahalDuzenlemeKaydet()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-bold">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://cbwhkgngbecagunjkvid.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNid2hrZ25nYmVjYWd1bmprdmlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1OTM0NDAsImV4cCI6MjEwOTE2OTQ0MH0.xWe2gWHR0DRdl_YUm08ON7nhzDxdeMVkBgGaK1nwWX0';
+        
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let mahaller = [];
+        let isKayitlari = [];
+        let seciliMahal = null;
+
+        async function verileriGetir() {
+            const { data: mahalData } = await _supabase.from('mahaller').select('*');
+            if (mahalData) mahaller = mahalData;
+
+            const { data: isData } = await _supabase.from('is_kayitlari').select('*');
+            if (isData) isKayitlari = isData;
+
+            mahalleriniGoster();
+        }
+
+        // Mahalleri Sol Ekranda Listele
+        function mahalleriniGoster() {
+            const aramaMetni = document.getElementById('solAramaInput').value.toLowerCase();
+            const listeDiv = document.getElementById('mahalListesi');
+            listeDiv.innerHTML = '';
+
+            const filtrelenmis = mahaller.filter(m => m.mahal_adi.toLowerCase().includes(aramaMetni));
+
+            filtrelenmis.forEach(mahal => {
+                const isSecili = seciliMahal && seciliMahal.id === mahal.id;
+                
+                let html = `
+                    <div class="mb-2 border rounded overflow-hidden">
+                        <div class="p-3 font-semibold flex justify-between items-center ${isSecili ? 'bg-blue-100 text-blue-900' : 'bg-gray-50 hover:bg-gray-200'}">
+                            <span class="cursor-pointer flex-1" onclick="mahalTikla('${mahal.id}')">${mahal.mahal_adi}</span>
+                            <div class="flex items-center gap-1">
+                                <button onclick="mahalDuzenleModalAc('${mahal.id}')" class="text-xs bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded font-bold">Düzenle</button>
+                                <button onclick="mahalSil('${mahal.id}')" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold">Sil</button>
+                                <span class="text-xs text-gray-500 ml-2 cursor-pointer" onclick="mahalTikla('${mahal.id}')">${isSecili ? 'Kapat ▲' : 'Aç ▼'}</span>
+                            </div>
+                        </div>
+                `;
+
+                if (isSecili) {
+                    const oMahalinIsleri = isKayitlari
+                        .filter(i => i.mahal_id === mahal.id)
+                        .sort((a, b) => new Date(b.tarih) - new Date(a.tarih));
+
+                    html += `<div class="p-3 bg-blue-50 text-sm border-t">
+                                <h4 class="font-bold mb-2 text-gray-700">Geçmiş Kayıtlar:</h4>`;
+                    
+                    if (oMahalinIsleri.length > 0) {
+                        oMahalinIsleri.forEach(is => {
+                            html += `
+                                <div class="border-b py-2 flex flex-col gap-1 bg-white p-2 rounded mb-1 shadow-sm">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-blue-700 font-bold text-xs">${is.tarih}</span>
+                                        <span class="text-gray-600 text-xs italic">Yapan: ${is.yapan_kisi || 'Belirtilmemiş'}</span>
+                                    </div>
+                                    <div class="text-gray-800 text-sm">${is.yapilan_is}</div>
+                                    <div class="flex justify-end gap-2 mt-1">
+                                        <button onclick="duzenleModalAc('${is.id}')" class="text-xs bg-amber-500 hover:bg-amber-600 text-white px-2 py-0.5 rounded font-bold">Düzenle</button>
+                                        <button onclick="isSil('${is.id}')" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-0.5 rounded font-bold">Sil</button>
+                                    </div>
+                                </div>`;
+                        });
+                    } else {
+                        html += `<p class="text-gray-400 text-xs">Henüz kayıt yok.</p>`;
+                    }
+                    html += `</div>`;
+                }
+
+                html += `</div>`;
+                listeDiv.innerHTML += html;
+            });
+        }
+
+        function filtreleMahaller() {
+            mahalleriniGoster();
+        }
+
+        async function mahalTikla(id) {
+            if (seciliMahal && seciliMahal.id === id) {
+                seciliMahal = null;
+                document.getElementById('sagPanelIcerik').innerHTML = `
+                    <div class="flex items-center justify-center h-full text-gray-400">
+                        İşlem yapmak için sol panelden bir mahal seçin.
+                    </div>`;
+            } else {
+                seciliMahal = mahaller.find(m => m.id === id);
+                sagPaneliGoster();
+            }
+            mahalleriniGoster();
+        }
+
+        function sagPaneliGoster() {
+            const sagDiv = document.getElementById('sagPanelIcerik');
+            if (!seciliMahal) return;
+
+            sagDiv.innerHTML = `
+                <h2 class="text-xl font-bold mb-4 text-gray-800">${seciliMahal.mahal_adi} - İş Kayıtları</h2>
+                
+                <div class="mb-4">
+                    <input 
+                        type="text" 
+                        id="sagAramaInput" 
+                        placeholder="Tarih, Kişi veya Kelime Ara..." 
+                        class="border p-2 rounded w-full outline-none focus:border-green-500"
+                        oninput="isleriFiltreleGoster()"
+                    />
+                </div>
+
+                <div class="bg-gray-50 p-4 rounded border mb-6 flex flex-col gap-3">
+                    <h3 class="font-bold text-gray-700">Yeni İş Ekle</h3>
+                    <div class="flex gap-2 items-center">
+                        <input type="date" id="yeniTarih" class="border p-2 rounded w-1/2 outline-none text-sm" />
+                        <button onclick="bugununTarihiniYaz()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-xs font-bold whitespace-nowrap">Bugün</button>
+                    </div>
+                    <input type="text" id="yeniYapanKisi" placeholder="İşi yapan kişi..." class="border p-2 rounded w-full outline-none text-sm" />
+                    <div class="flex gap-2">
+                        <input type="text" id="yeniIsTanimi" placeholder="Yapılan işi yazın..." class="border p-2 rounded w-full outline-none text-sm" />
+                        <button onclick="isEkle()" class="bg-green-600 hover:bg-green-700 text-white px-5 rounded font-bold">+</button>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto" id="sagIsListesi"></div>
+            `;
+            isleriFiltreleGoster();
+        }
+
+        function bugununTarihiniYaz() {
+            const bugun = new Date().toISOString().split('T')[0];
+            document.getElementById('yeniTarih').value = bugun;
+        }
+
+        function isleriFiltreleGoster() {
+            const arama = document.getElementById('sagAramaInput').value.toLowerCase();
+            const listeDiv = document.getElementById('sagIsListesi');
+            listeDiv.innerHTML = '';
+
+            const filtrelenmis = isKayitlari.filter(is => {
+                if (is.mahal_id !== seciliMahal.id) return false;
+                const yapan = is.yapan_kisi ? is.yapan_kisi.toLowerCase() : '';
+                return is.yapilan_is.toLowerCase().includes(arama) || is.tarih.includes(arama) || yapan.includes(arama);
+            }).sort((a, b) => new Date(b.tarih) - new Date(a.tarih));
+
+            if (filtrelenmis.length > 0) {
+                filtrelenmis.forEach(is => {
+                    listeDiv.innerHTML += `
+                        <div class="p-3 border-b flex justify-between items-center bg-gray-50 mb-2 rounded shadow-sm">
+                            <div>
+                                <div class="flex gap-3 text-xs mb-1">
+                                    <span class="text-blue-600 font-bold">${is.tarih}</span>
+                                    <span class="text-gray-600 italic">Yapan: ${is.yapan_kisi || 'Belirtilmemiş'}</span>
+                                </div>
+                                <div class="text-gray-800 font-medium">${is.yapilan_is}</div>
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="duzenleModalAc('${is.id}')" class="text-xs bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded font-bold">Düzenle</button>
+                                <button onclick="isSil('${is.id}')" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold">Sil</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                listeDiv.innerHTML = `<p class="text-gray-400">Eşleşen kayıt bulunamadı.</p>`;
+            }
+        }
+
+        async function mahalEkle() {
+            const input = document.getElementById('yeniMahalInput');
+            const mahalAdi = input.value.trim();
+            if (!mahalAdi) return;
+
+            const { data, error } = await _supabase.from('mahaller').insert([{ mahal_adi: mahalAdi }]).select();
+            if (error) {
+                alert("Mahal eklenirken hata: " + error.message);
+                return;
+            }
+            if (data) {
+                mahaller.push(data[0]);
+                input.value = '';
+                mahalleriniGoster();
+            }
+        }
+
+        async function mahalSil(id) {
+            if (!confirm("Bu mahali ve bağlı tüm iş kayıtlarını silmek istediğinize emin misiniz?")) return;
+
+            const { error } = await _supabase.from('mahaller').delete().eq('id', id);
+            if (error) {
+                alert("Silme hatası: " + error.message);
+                return;
+            }
+
+            mahaller = mahaller.filter(m => m.id !== id);
+            isKayitlari = isKayitlari.filter(i => i.mahal_id !== id);
+            
+            if (seciliMahal && seciliMahal.id === id) {
+                seciliMahal = null;
+                document.getElementById('sagPanelIcerik').innerHTML = `
+                    <div class="flex items-center justify-center h-full text-gray-400">
+                        İşlem yapmak için sol panelden bir mahal seçin.
+                    </div>`;
+            }
+            mahalleriniGoster();
+        }
+
+        function mahalDuzenleModalAc(id) {
+            const mahal = mahaller.find(m => m.id === id);
+            if (!mahal) return;
+
+            document.getElementById('mahalDuzenleId').value = mahal.id;
+            document.getElementById('mahalDuzenleAdi').value = mahal.mahal_adi;
+
+            document.getElementById('mahalDuzenleModal').classList.remove('hidden');
+        }
+
+        function mahalModalKapat() {
+            document.getElementById('mahalDuzenleModal').classList.add('hidden');
+        }
+
+        async function mahalDuzenlemeKaydet() {
+            const id = document.getElementById('mahalDuzenleId').value;
+            const mahalAdi = document.getElementById('mahalDuzenleAdi').value.trim();
+
+            if (!mahalAdi) {
+                alert("Mahal adı boş bırakılamaz.");
+                return;
+            }
+
+            const { error } = await _supabase.from('mahaller').update({
+                mahal_adi: mahalAdi
+            }).eq('id', id);
+
+            if (error) {
+                alert("Güncelleme hatası: " + error.message);
+                return;
+            }
+
+            const index = mahaller.findIndex(m => m.id === id);
+            if (index !== -1) {
+                mahaller[index].mahal_adi = mahalAdi;
+            }
+
+            mahalModalKapat();
+            mahalleriniGoster();
+            if (seciliMahal && seciliMahal.id === id) {
+                sagPaneliGoster();
+            }
+        }
+
+        async function isEkle() {
+            const tarih = document.getElementById('yeniTarih').value;
+            const yapanKisi = document.getElementById('yeniYapanKisi').value.trim();
+            const yapilanIs = document.getElementById('yeniIsTanimi').value.trim();
+            if (!tarih || !yapilanIs || !seciliMahal) return;
+
+            const { data, error } = await _supabase.from('is_kayitlari').insert([{
+                mahal_id: seciliMahal.id,
+                tarih: tarih,
+                yapan_kisi: yapanKisi,
+                yapilan_is: yapilanIs
+            }]).select();
+
+            if (error) {
+                alert("İş eklenirken hata: " + error.message);
+                return;
+            }
+            if (data) {
+                isKayitlari.push(data[0]);
+                document.getElementById('yeniTarih').value = '';
+                document.getElementById('yeniYapanKisi').value = '';
+                document.getElementById('yeniIsTanimi').value = '';
+                mahalleriniGoster(); 
+                isleriFiltreleGoster(); 
+            }
+        }
+
+        async function isSil(id) {
+            if (!confirm("Bu iş kaydını silmek istediğinize emin misiniz?")) return;
+
+            const { error } = await _supabase.from('is_kayitlari').delete().eq('id', id);
+            if (error) {
+                alert("Silme hatası: " + error.message);
+                return;
+            }
+
+            isKayitlari = isKayitlari.filter(i => i.id !== id);
+            mahalleriniGoster();
+            if (seciliMahal) isleriFiltreleGoster();
+        }
+
+        function duzenleModalAc(id) {
+            const kayit = isKayitlari.find(i => i.id === id);
+            if (!kayit) return;
+
+            document.getElementById('duzenleId').value = kayit.id;
+            document.getElementById('duzenleTarih').value = kayit.tarih;
+            document.getElementById('duzenleYapanKisi').value = kayit.yapan_kisi || '';
+            document.getElementById('duzenleYapilanIs').value = kayit.yapilan_is;
+
+            document.getElementById('duzenleModal').classList.remove('hidden');
+        }
+
+        function modalKapat() {
+            document.getElementById('duzenleModal').classList.add('hidden');
+        }
+
+        async function duzenlemeKaydet() {
+            const id = document.getElementById('duzenleId').value;
+            const tarih = document.getElementById('duzenleTarih').value;
+            const yapanKisi = document.getElementById('duzenleYapanKisi').value.trim();
+            const yapilanIs = document.getElementById('duzenleYapilanIs').value.trim();
+
+            if (!tarih || !yapilanIs) {
+                alert("Tarih eksper ve yapılan iş boş bırakılamaz.");
+                return;
+            }
+
+            const { error } = await _supabase.from('is_kayitlari').update({
+                tarih: tarih,
+                yapan_kisi: yapanKisi,
+                yapilan_is: yapilanIs
+            }).eq('id', id);
+
+            if (error) {
+                alert("Güncelleme hatası: " + error.message);
+                return;
+            }
+
+            const index = isKayitlari.findIndex(i => i.id === id);
+            if (index !== -1) {
+                isKayitlari[index].tarih = tarih;
+                isKayitlari[index].yapan_kisi = yapanKisi;
+                isKayitlari[index].yapilan_is = yapilanIs;
+            }
+
+            modalKapat();
+            mahalleriniGoster();
+            if (seciliMahal) isleriFiltreleGoster();
+        }
+
+        // Panelleri Boyutlandırma Sürükleme Mantığı
+        const ayrac = document.getElementById('ayrac');
+        const solPanel = document.getElementById('solPanel');
+        const anaKapsayici = document.getElementById('anaKapsayici');
+        let aktifSurukleme = false;
+
+        ayrac.addEventListener('mousedown', () => {
+            aktifSurukleme = true;
+            document.body.style.cursor = 'col-resize';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!aktifSurukleme) return;
+            const toplamGenislik = anaKapsayici.offsetWidth;
+            const yeniGenislik = (e.clientX / toplamGenislik) * 100;
+            if (yeniGenislik >= 20 && yeniGenislik <= 80) {
+                solPanel.style.width = yeniGenislik + '%';
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            aktifSurukleme = false;
+            document.body.style.cursor = 'default';
+        });
+
+        verileriGetir();
+    </script>
+</body>
+</html>

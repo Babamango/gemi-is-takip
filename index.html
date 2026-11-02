@@ -6,6 +6,11 @@
     <title>Gemi Mahal ve İş Takip Sistemi</title>
     <!-- Tailwind CSS Tasarım Kütüphanesi -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
     <!-- Supabase Kütüphanesi -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -14,21 +19,34 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 h-screen flex flex-col overflow-hidden">
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 h-screen flex flex-col overflow-hidden font-sans transition-colors duration-200">
 
-    <div id="anaKapsayici" class="flex h-full w-full relative">
+    <!-- ÜST HEADER -->
+    <header class="bg-slate-900 dark:bg-slate-900 border-b border-slate-800 text-white px-6 py-3 flex justify-between items-center shadow-md">
+        <h1 class="text-lg font-bold tracking-wide flex items-center gap-2">
+            🚢 Gemi Mahal & İş Takip Sistemi
+        </h1>
+        <div class="flex items-center gap-3">
+            <button onclick="temaDegistir()" id="temaBtn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 text-white">
+                🌙 Karanlık Mod
+            </button>
+            <span class="text-xs bg-slate-800 px-3 py-1 rounded-full text-slate-300 border border-slate-700">Canlı Veritabanı</span>
+        </div>
+    </header>
+
+    <div id="anaKapsayici" class="flex h-full w-full relative overflow-hidden">
         
         <!-- SOL PANEL: Mahaller ve Akordeon -->
-        <div id="solPanel" class="p-4 border-r border-gray-300 bg-white overflow-y-auto flex flex-col" style="width: 40%;">
-            <h2 class="text-xl font-bold mb-4 text-gray-800">Gemi Mahalleri</h2>
+        <div id="solPanel" class="p-5 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-y-auto flex flex-col shadow-sm transition-colors duration-200" style="width: 38%;">
+            <h2 class="text-base font-bold mb-3 text-slate-800 dark:text-slate-200 uppercase tracking-wider">Mahaller</h2>
             
             <!-- Mahal Arama -->
-            <div class="mb-4">
+            <div class="mb-3">
                 <input 
                     type="text" 
                     id="solAramaInput" 
-                    placeholder="Mahal Ara..." 
-                    class="border p-2 rounded w-full outline-none focus:border-blue-500"
+                    placeholder="Mahal ara..." 
+                    class="border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 p-2.5 rounded-lg w-full text-sm outline-none focus:border-blue-500 transition-all"
                     oninput="filtreleMahaller()"
                 />
             </div>
@@ -39,25 +57,24 @@
                     type="text" 
                     id="yeniMahalInput" 
                     placeholder="Yeni mahal adı..." 
-                    class="border p-2 rounded w-full outline-none focus:border-blue-500"
+                    class="border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 p-2.5 rounded-lg w-full text-sm outline-none focus:border-blue-500 transition-all"
                 />
-                <button onclick="mahalEkle()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded font-bold">+</button>
+                <button onclick="mahalEkle()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg font-bold transition-colors shadow-sm">+</button>
             </div>
 
             <!-- Mahal Listesi -->
-            <div id="mahalListesi" class="flex-1 overflow-y-auto"></div>
+            <div id="mahalListesi" class="flex-1 overflow-y-auto space-y-2"></div>
         </div>
 
         <!-- ORTA SÜRÜKLEME ÇUBUĞU -->
-        <div id="ayrac" class="w-2 bg-gray-200 hover:bg-blue-400 transition-colors flex items-center justify-center">
-            <div class="w-1 h-8 bg-gray-400 rounded"></div>
-        </div>
+        <div id="ayrac" class="w-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-blue-500 transition-colors flex items-center justify-center cursor-col-resize"></div>
 
         <!-- SAĞ PANEL: İş Ekleme ve Detaylı Arama -->
-        <div id="sagPanel" class="p-4 bg-white overflow-y-auto flex flex-col flex-1">
+        <div id="sagPanel" class="p-5 bg-slate-50 dark:bg-slate-950 overflow-y-auto flex flex-col flex-1 transition-colors duration-200">
             <div id="sagPanelIcerik" class="flex flex-col h-full">
-                <div class="flex items-center justify-center h-full text-gray-400">
-                    İşlem yapmak için sol panelden bir mahal seçin.
+                <div class="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-600 gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 stroke-slate-300 dark:stroke-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    <p class="text-sm">İşlem yapmak için sol panelden bir mahal seçin.</p>
                 </div>
             </div>
         </div>
@@ -65,39 +82,44 @@
     </div>
 
     <!-- İŞ DÜZENLEME MODALI -->
-    <div id="duzenleModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg w-96 shadow-xl">
-            <h3 class="text-lg font-bold mb-4 text-gray-800">İş Kaydını Düzenle</h3>
+    <div id="duzenleModal" class="fixed inset-0 bg-slate-950 bg-opacity-40 dark:bg-opacity-70 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-2xl w-96 shadow-2xl">
+            <h3 class="text-base font-bold mb-4 text-slate-800 dark:text-slate-100">İş Kaydını Düzenle</h3>
             <input type="hidden" id="duzenleId" />
             
-            <label class="block text-xs font-semibold text-gray-600 mb-1">Tarih</label>
-            <input type="date" id="duzenleTarih" class="border p-2 rounded w-full mb-3 outline-none" />
-            
-            <label class="block text-xs font-semibold text-gray-600 mb-1">İşi Yapan Kişi</label>
-            <input type="text" id="duzenleYapanKisi" placeholder="İşi yapan kişi..." class="border p-2 rounded w-full mb-3 outline-none" />
+            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Mahal Değiştir</label>
+            <select id="duzenleMahalSelect" class="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 p-2.5 rounded-lg w-full mb-3 text-sm outline-none focus:border-blue-500">
+                <!-- JavaScript ile doldurulacak -->
+            </select>
 
-            <label class="block text-xs font-semibold text-gray-600 mb-1">Yapılan İş</label>
-            <textarea id="duzenleYapilanIs" placeholder="Yapılan iş..." class="border p-2 rounded w-full mb-4 outline-none h-24"></textarea>
+            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Tarih</label>
+            <input type="date" id="duzenleTarih" class="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 p-2.5 rounded-lg w-full mb-3 text-sm outline-none focus:border-blue-500" />
+            
+            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">İşi Yapan Kişi</label>
+            <input type="text" id="duzenleYapanKisi" placeholder="İşi yapan kişi..." class="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 p-2.5 rounded-lg w-full mb-3 text-sm outline-none focus:border-blue-500" />
+
+            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Yapılan İş</label>
+            <textarea id="duzenleYapilanIs" placeholder="Yapılan iş..." class="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 p-2.5 rounded-lg w-full mb-4 text-sm outline-none h-24 focus:border-blue-500 resize-none"></textarea>
             
             <div class="flex justify-end gap-2">
-                <button onclick="modalKapat()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm font-bold">İptal</button>
-                <button onclick="duzenlemeKaydet()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-bold">Kaydet</button>
+                <button onclick="modalKapat()" class="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg text-xs font-bold transition-colors">İptal</button>
+                <button onclick="duzenlemeKaydet()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors">Kaydet</button>
             </div>
         </div>
     </div>
 
     <!-- MAHAL DÜZENLEME MODALI -->
-    <div id="mahalDuzenleModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg w-96 shadow-xl">
-            <h3 class="text-lg font-bold mb-4 text-gray-800">Mahal Adını Düzenle</h3>
+    <div id="mahalDuzenleModal" class="fixed inset-0 bg-slate-950 bg-opacity-40 dark:bg-opacity-70 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-2xl w-96 shadow-2xl">
+            <h3 class="text-base font-bold mb-4 text-slate-800 dark:text-slate-100">Mahal Adını Düzenle</h3>
             <input type="hidden" id="mahalDuzenleId" />
             
-            <label class="block text-xs font-semibold text-gray-600 mb-1">Mahal Adı</label>
-            <input type="text" id="mahalDuzenleAdi" class="border p-2 rounded w-full mb-4 outline-none" />
+            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Mahal Adı</label>
+            <input type="text" id="mahalDuzenleAdi" class="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 p-2.5 rounded-lg w-full mb-4 text-sm outline-none focus:border-blue-500" />
             
             <div class="flex justify-end gap-2">
-                <button onclick="mahalModalKapat()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm font-bold">İptal</button>
-                <button onclick="mahalDuzenlemeKaydet()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-bold">Kaydet</button>
+                <button onclick="mahalModalKapat()" class="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg text-xs font-bold transition-colors">İptal</button>
+                <button onclick="mahalDuzenlemeKaydet()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors">Kaydet</button>
             </div>
         </div>
     </div>
@@ -113,6 +135,30 @@
         let isKayitlari = [];
         let seciliMahal = null;
 
+        // Tema Ayarları
+        function temaDegistir() {
+            const html = document.documentElement;
+            const btn = document.getElementById('temaBtn');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.setItem('tema', 'light');
+                btn.innerHTML = '🌙 Karanlık Mod';
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem('tema', 'dark');
+                btn.innerHTML = '☀️ Aydınlık Mod';
+            }
+        }
+
+        // Sayfa açıldığında kayıtlı temayı yükle
+        if (localStorage.getItem('tema') === 'dark' || (!localStorage.getItem('tema') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            document.addEventListener('DOMContentLoaded', () => {
+                const btn = document.getElementById('temaBtn');
+                if(btn) btn.innerHTML = '☀️ Aydınlık Mod';
+            });
+        }
+
         async function verileriGetir() {
             const { data: mahalData } = await _supabase.from('mahaller').select('*');
             if (mahalData) mahaller = mahalData;
@@ -121,6 +167,7 @@
             if (isData) isKayitlari = isData;
 
             mahalleriniGoster();
+            if(seciliMahal) sagPaneliGoster();
         }
 
         // Mahalleri Sol Ekranda Listele
@@ -133,15 +180,19 @@
 
             filtrelenmis.forEach(mahal => {
                 const isSecili = seciliMahal && seciliMahal.id === mahal.id;
+                const kayitSayisi = isKayitlari.filter(i => i.mahal_id === mahal.id).length;
                 
                 let html = `
-                    <div class="mb-2 border rounded overflow-hidden">
-                        <div class="p-3 font-semibold flex justify-between items-center ${isSecili ? 'bg-blue-100 text-blue-900' : 'bg-gray-50 hover:bg-gray-200'}">
-                            <span class="cursor-pointer flex-1" onclick="mahalTikla('${mahal.id}')">${mahal.mahal_adi}</span>
-                            <div class="flex items-center gap-1">
-                                <button onclick="mahalDuzenleModalAc('${mahal.id}')" class="text-xs bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded font-bold">Düzenle</button>
-                                <button onclick="mahalSil('${mahal.id}')" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold">Sil</button>
-                                <span class="text-xs text-gray-500 ml-2 cursor-pointer" onclick="mahalTikla('${mahal.id}')">${isSecili ? 'Kapat ▲' : 'Aç ▼'}</span>
+                    <div class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden transition-all shadow-sm bg-white dark:bg-slate-900">
+                        <div class="p-3.5 font-medium flex justify-between items-center cursor-pointer transition-colors ${isSecili ? 'bg-blue-50 dark:bg-slate-800 text-blue-900 dark:text-blue-400 border-l-4 border-blue-600' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300'}" onclick="mahalTikla('${mahal.id}')">
+                            <div class="flex items-center gap-2 flex-1 truncate mr-2">
+                                <span class="font-semibold text-sm truncate">${mahal.mahal_adi}</span>
+                                <span class="text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full font-medium whitespace-nowrap border border-slate-200 dark:border-slate-700">${kayitSayisi} giriş</span>
+                            </div>
+                            <div class="flex items-center gap-1.5" onclick="event.stopPropagation()">
+                                <button onclick="mahalDuzenleModalAc('${mahal.id}')" class="text-xs bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 text-amber-700 dark:text-amber-400 px-2 py-1 rounded-md font-semibold transition-colors">Düzenle</button>
+                                <button onclick="mahalSil('${mahal.id}')" class="text-xs bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-600 dark:text-rose-400 px-2 py-1 rounded-md font-semibold transition-colors">Sil</button>
+                                <span class="text-xs text-slate-400 ml-1">${isSecili ? '▲' : '▼'}</span>
                             </div>
                         </div>
                 `;
@@ -151,26 +202,28 @@
                         .filter(i => i.mahal_id === mahal.id)
                         .sort((a, b) => new Date(b.tarih) - new Date(a.tarih));
 
-                    html += `<div class="p-3 bg-blue-50 text-sm border-t">
-                                <h4 class="font-bold mb-2 text-gray-700">Geçmiş Kayıtlar:</h4>`;
+                    html += `<div class="p-3 bg-slate-50 dark:bg-slate-950 text-sm border-t border-slate-200 dark:border-slate-800 space-y-2">
+                                <h4 class="font-semibold text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Geçmiş Kayıtlar</h4>`;
                     
                     if (oMahalinIsleri.length > 0) {
                         oMahalinIsleri.forEach(is => {
                             html += `
-                                <div class="border-b py-2 flex flex-col gap-1 bg-white p-2 rounded mb-1 shadow-sm">
+                                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-2xs flex flex-col gap-1.5">
                                     <div class="flex justify-between items-center">
-                                        <span class="text-blue-700 font-bold text-xs">${is.tarih}</span>
-                                        <span class="text-gray-600 text-xs italic">Yapan: ${is.yapan_kisi || 'Belirtilmemiş'}</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-blue-600 dark:text-blue-400 font-bold text-xs">${is.tarih}</span>
+                                            <div class="flex gap-1">
+                                                <button onclick="duzenleModalAc('${is.id}')" class="text-[10px] bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded font-semibold transition-colors">Düzenle</button>
+                                                <button onclick="isSil('${is.id}')" class="text-[10px] bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded font-semibold transition-colors">Sil</button>
+                                            </div>
+                                        </div>
+                                        <span class="text-slate-500 dark:text-slate-400 italic text-xs">Yapan: ${is.yapan_kisi || 'Belirtilmemiş'}</span>
                                     </div>
-                                    <div class="text-gray-800 text-sm">${is.yapilan_is}</div>
-                                    <div class="flex justify-end gap-2 mt-1">
-                                        <button onclick="duzenleModalAc('${is.id}')" class="text-xs bg-amber-500 hover:bg-amber-600 text-white px-2 py-0.5 rounded font-bold">Düzenle</button>
-                                        <button onclick="isSil('${is.id}')" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-0.5 rounded font-bold">Sil</button>
-                                    </div>
+                                    <div class="text-slate-800 dark:text-slate-200 text-sm font-medium">${is.yapilan_is}</div>
                                 </div>`;
                         });
                     } else {
-                        html += `<p class="text-gray-400 text-xs">Henüz kayıt yok.</p>`;
+                        html += `<p class="text-slate-400 dark:text-slate-500 text-xs italic">Henüz kayıt yok.</p>`;
                     }
                     html += `</div>`;
                 }
@@ -188,8 +241,9 @@
             if (seciliMahal && seciliMahal.id === id) {
                 seciliMahal = null;
                 document.getElementById('sagPanelIcerik').innerHTML = `
-                    <div class="flex items-center justify-center h-full text-gray-400">
-                        İşlem yapmak için sol panelden bir mahal seçin.
+                    <div class="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-600 gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 stroke-slate-300 dark:stroke-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                        <p class="text-sm">İşlem yapmak için sol panelden bir mahal seçin.</p>
                     </div>`;
             } else {
                 seciliMahal = mahaller.find(m => m.id === id);
@@ -203,32 +257,35 @@
             if (!seciliMahal) return;
 
             sagDiv.innerHTML = `
-                <h2 class="text-xl font-bold mb-4 text-gray-800">${seciliMahal.mahal_adi} - İş Kayıtları</h2>
+                <h2 class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 bg-blue-600 rounded-full"></span>
+                    ${seciliMahal.mahal_adi} <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">/ İş Kayıtları</span>
+                </h2>
                 
                 <div class="mb-4">
                     <input 
                         type="text" 
                         id="sagAramaInput" 
-                        placeholder="Tarih, Kişi veya Kelime Ara..." 
-                        class="border p-2 rounded w-full outline-none focus:border-green-500"
+                        placeholder="Tarih, kişi veya kelime ara..." 
+                        class="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 rounded-lg w-full text-sm outline-none focus:border-blue-500 shadow-sm transition-all"
                         oninput="isleriFiltreleGoster()"
                     />
                 </div>
 
-                <div class="bg-gray-50 p-4 rounded border mb-6 flex flex-col gap-3">
-                    <h3 class="font-bold text-gray-700">Yeni İş Ekle</h3>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 mb-5 flex flex-col gap-3 shadow-sm">
+                    <h3 class="font-bold text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">Yeni İş Ekle</h3>
                     <div class="flex gap-2 items-center">
-                        <input type="date" id="yeniTarih" class="border p-2 rounded w-1/2 outline-none text-sm" />
-                        <button onclick="bugununTarihiniYaz()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-xs font-bold whitespace-nowrap">Bugün</button>
+                        <input type="date" id="yeniTarih" class="border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 p-2.5 rounded-lg w-1/2 outline-none text-sm focus:border-blue-500" />
+                        <button onclick="bugununTarihiniYaz()" class="bg-slate-700 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white px-3 py-2.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap">Bugün</button>
                     </div>
-                    <input type="text" id="yeniYapanKisi" placeholder="İşi yapan kişi..." class="border p-2 rounded w-full outline-none text-sm" />
+                    <input type="text" id="yeniYapanKisi" placeholder="İşi yapan kişi..." class="border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 p-2.5 rounded-lg w-full outline-none text-sm focus:border-blue-500" />
                     <div class="flex gap-2">
-                        <input type="text" id="yeniIsTanimi" placeholder="Yapılan işi yazın..." class="border p-2 rounded w-full outline-none text-sm" />
-                        <button onclick="isEkle()" class="bg-green-600 hover:bg-green-700 text-white px-5 rounded font-bold">+</button>
+                        <input type="text" id="yeniIsTanimi" placeholder="Yapılan işi detaylı yazın..." class="border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 p-2.5 rounded-lg w-full outline-none text-sm focus:border-blue-500" />
+                        <button onclick="isEkle()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 rounded-lg font-bold transition-colors shadow-sm">+</button>
                     </div>
                 </div>
 
-                <div class="flex-1 overflow-y-auto" id="sagIsListesi"></div>
+                <div class="flex-1 overflow-y-auto space-y-2.5" id="sagIsListesi"></div>
             `;
             isleriFiltreleGoster();
         }
@@ -252,23 +309,23 @@
             if (filtrelenmis.length > 0) {
                 filtrelenmis.forEach(is => {
                     listeDiv.innerHTML += `
-                        <div class="p-3 border-b flex justify-between items-center bg-gray-50 mb-2 rounded shadow-sm">
-                            <div>
-                                <div class="flex gap-3 text-xs mb-1">
-                                    <span class="text-blue-600 font-bold">${is.tarih}</span>
-                                    <span class="text-gray-600 italic">Yapan: ${is.yapan_kisi || 'Belirtilmemiş'}</span>
+                        <div class="p-3.5 border border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900 rounded-xl shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+                            <div class="space-y-1.5 flex-1">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-blue-600 dark:text-blue-400 font-bold text-xs">${is.tarih}</span>
+                                    <div class="flex gap-1">
+                                        <button onclick="duzenleModalAc('${is.id}')" class="text-xs bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded font-semibold transition-colors">Düzenle</button>
+                                        <button onclick="isSil('${is.id}')" class="text-xs bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded font-semibold transition-colors">Sil</button>
+                                    </div>
+                                    <span class="text-slate-500 dark:text-slate-400 italic text-xs ml-auto">Yapan: ${is.yapan_kisi || 'Belirtilmemiş'}</span>
                                 </div>
-                                <div class="text-gray-800 font-medium">${is.yapilan_is}</div>
-                            </div>
-                            <div class="flex gap-1">
-                                <button onclick="duzenleModalAc('${is.id}')" class="text-xs bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded font-bold">Düzenle</button>
-                                <button onclick="isSil('${is.id}')" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold">Sil</button>
+                                <div class="text-slate-800 dark:text-slate-200 text-sm font-medium">${is.yapilan_is}</div>
                             </div>
                         </div>
                     `;
                 });
             } else {
-                listeDiv.innerHTML = `<p class="text-gray-400">Eşleşen kayıt bulunamadı.</p>`;
+                listeDiv.innerHTML = `<p class="text-slate-400 dark:text-slate-500 text-sm italic text-center py-6">Eşleşen kayıt bulunamadı.</p>`;
             }
         }
 
@@ -304,8 +361,9 @@
             if (seciliMahal && seciliMahal.id === id) {
                 seciliMahal = null;
                 document.getElementById('sagPanelIcerik').innerHTML = `
-                    <div class="flex items-center justify-center h-full text-gray-400">
-                        İşlem yapmak için sol panelden bir mahal seçin.
+                    <div class="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-600 gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 stroke-slate-300 dark:stroke-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                        <p class="text-sm">İşlem yapmak için sol panelden bir mahal seçin.</p>
                     </div>`;
             }
             mahalleriniGoster();
@@ -317,7 +375,6 @@
 
             document.getElementById('mahalDuzenleId').value = mahal.id;
             document.getElementById('mahalDuzenleAdi').value = mahal.mahal_adi;
-
             document.getElementById('mahalDuzenleModal').classList.remove('hidden');
         }
 
@@ -334,9 +391,7 @@
                 return;
             }
 
-            const { error } = await _supabase.from('mahaller').update({
-                mahal_adi: mahalAdi
-            }).eq('id', id);
+            const { error } = await _supabase.from('mahaller').update({ mahal_adi: mahalAdi }).eq('id', id);
 
             if (error) {
                 alert("Güncelleme hatası: " + error.message);
@@ -401,10 +456,20 @@
             if (!kayit) return;
 
             document.getElementById('duzenleId').value = kayit.id;
+            
+            const select = document.getElementById('duzenleMahalSelect');
+            select.innerHTML = '';
+            mahaller.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.mahal_adi;
+                if (m.id === kayit.mahal_id) opt.selected = true;
+                select.appendChild(opt);
+            });
+
             document.getElementById('duzenleTarih').value = kayit.tarih;
             document.getElementById('duzenleYapanKisi').value = kayit.yapan_kisi || '';
             document.getElementById('duzenleYapilanIs').value = kayit.yapilan_is;
-
             document.getElementById('duzenleModal').classList.remove('hidden');
         }
 
@@ -414,16 +479,18 @@
 
         async function duzenlemeKaydet() {
             const id = document.getElementById('duzenleId').value;
+            const yeniMahalId = document.getElementById('duzenleMahalSelect').value;
             const tarih = document.getElementById('duzenleTarih').value;
             const yapanKisi = document.getElementById('duzenleYapanKisi').value.trim();
             const yapilanIs = document.getElementById('duzenleYapilanIs').value.trim();
 
             if (!tarih || !yapilanIs) {
-                alert("Tarih eksper ve yapılan iş boş bırakılamaz.");
+                alert("Tarih ve yapılan iş boş bırakılamaz.");
                 return;
             }
 
             const { error } = await _supabase.from('is_kayitlari').update({
+                mahal_id: yeniMahalId,
                 tarih: tarih,
                 yapan_kisi: yapanKisi,
                 yapilan_is: yapilanIs
@@ -436,6 +503,7 @@
 
             const index = isKayitlari.findIndex(i => i.id === id);
             if (index !== -1) {
+                isKayitlari[index].mahal_id = yeniMahalId;
                 isKayitlari[index].tarih = tarih;
                 isKayitlari[index].yapan_kisi = yapanKisi;
                 isKayitlari[index].yapilan_is = yapilanIs;

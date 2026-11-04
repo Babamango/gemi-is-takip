@@ -112,21 +112,17 @@
                     </button>
                 </div>
 
-                <!-- Yeni Misafir Ekleme Giriş Alanı (Gizli Başlar) -->
                 <div id="yeniMisafirForm" class="flex gap-2 hidden">
-                    <input type="text" id="yeniMisafirAdi" placeholder="Tam misafir adı (örn: Ahmet)..." class="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 p-2 rounded-lg w-full text-xs outline-none focus:border-blue-500" />
+                    <input type="text" id="yeniMisafirAdi" placeholder="Tam misafir adı..." class="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 p-2 rounded-lg w-full text-xs outline-none focus:border-blue-500" />
                     <button onclick="misafirEkleKaydet()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition-colors">Kaydet</button>
                 </div>
 
-                <!-- Kayıtlı Misafirler Listesi -->
-                <div id="kayitliMisafirlerListesi" class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                    <!-- JS ile dolacak -->
-                </div>
+                <div id="kayitliMisafirlerListesi" class="space-y-1.5 max-h-36 overflow-y-auto pr-1"></div>
             </div>
 
-            <!-- Sadece Adminler İçin Şifre Değiştirme Alanı -->
+            <!-- Sadece Adminler İçin Şifre Değiştirme Alanı (Supabase Bağlantılı) -->
             <div id="adminAyarBolumu" class="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800 hidden">
-                <p class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Admin Bilgileri Güncelle</p>
+                <p class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Admin Bilgilerini Güncelle (Canlı)</p>
                 <div>
                     <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Yeni Kullanıcı Adı</label>
                     <input type="text" id="yeniAdminKadi" placeholder="Yeni kullanıcı adı..." class="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 p-2.5 rounded-lg w-full text-sm outline-none focus:border-blue-500" />
@@ -135,8 +131,8 @@
                     <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Yeni Şifre</label>
                     <input type="text" id="yeniAdminSifre" placeholder="Yeni şifre..." class="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 p-2.5 rounded-lg w-full text-sm outline-none focus:border-blue-500" />
                 </div>
-                <button onclick="adminBilgileriniGuncelle()" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-lg text-xs font-bold transition-colors">Şifreyi ve Adı Güncelle</button>
-                <div id="ayarBasari" class="text-emerald-600 dark:text-emerald-400 text-xs font-semibold text-center hidden">Bilgiler başarıyla güncellendi!</div>
+                <button onclick="adminBilgileriniGuncelle()" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-lg text-xs font-bold transition-colors">Canlı Olarak Güncelle</button>
+                <div id="ayarBasari" class="text-emerald-600 dark:text-emerald-400 text-xs font-semibold text-center hidden">Şifre ve kullanıcı adı veritabanında güncellendi!</div>
             </div>
 
             <!-- Çıkış Yap Butonu -->
@@ -268,8 +264,6 @@
         let kullaniciRolu = null;
         let aktifMisafirAdi = null;
 
-        if (!localStorage.getItem('adminKadi')) localStorage.setItem('adminKadi', 'gnrtek');
-        if (!localStorage.getItem('adminSifre')) localStorage.setItem('adminSifre', 'Mahmut_1234');
         if (!localStorage.getItem('misafirListesi')) {
             localStorage.setItem('misafirListesi', JSON.stringify(['misafir1', 'ornek_misafir']));
         }
@@ -327,12 +321,6 @@
 
         function adminModalAc() {
             document.getElementById('adminModal').classList.remove('hidden');
-            const hatirlaDurumu = localStorage.getItem('adminHatirla');
-            if (hatirlaDurumu === 'true') {
-                document.getElementById('adminKadi').value = localStorage.getItem('adminKadi');
-                document.getElementById('adminSifre').value = localStorage.getItem('adminSifre');
-                document.getElementById('beniHatirla').checked = true;
-            }
         }
 
         function adminModalKapat() {
@@ -340,15 +328,24 @@
             document.getElementById('girisHata').classList.add('hidden');
         }
 
-        function adminGirisKontrol() {
+        async function adminGirisKontrol() {
             const kadi = document.getElementById('adminKadi').value.trim();
             const sifre = document.getElementById('adminSifre').value.trim();
             const beniHatirla = document.getElementById('beniHatirla').checked;
 
-            const kayitliKadi = localStorage.getItem('adminKadi');
-            const kayitliSifre = localStorage.getItem('adminSifre');
+            // Supabase'den güncel admin bilgilerini çek
+            const { data, error } = await _supabase.from('sistem_ayarlari').select('*');
+            let dbKadi = 'gnrtek';
+            let dbSifre = 'Mahmut_1234';
 
-            if (kadi === kayitliKadi && sifre === kayitliSifre) {
+            if (data) {
+                data.forEach(item => {
+                    if (item.anahtar === 'admin_kadi') dbKadi = item.deger;
+                    if (item.anahtar === 'admin_sifre') dbSifre = item.deger;
+                });
+            }
+
+            if (kadi === dbKadi && sifre === dbSifre) {
                 kullaniciRolu = 'admin';
                 aktifMisafirAdi = null;
                 sessionStorage.setItem('aktifRol', 'admin');
@@ -370,7 +367,7 @@
             }
         }
 
-        function ayarlarModalAc() {
+        async function ayarlarModalAc() {
             document.getElementById('ayarlarModal').classList.remove('hidden');
             const adminAyarBolumu = document.getElementById('adminAyarBolumu');
             const misafirYonetimBolumu = document.getElementById('misafirYonetimBolumu');
@@ -378,8 +375,15 @@
             if (kullaniciRolu === 'admin') {
                 adminAyarBolumu.classList.remove('hidden');
                 misafirYonetimBolumu.classList.remove('hidden');
-                document.getElementById('yeniAdminKadi').value = localStorage.getItem('adminKadi');
-                document.getElementById('yeniAdminSifre').value = localStorage.getItem('adminSifre');
+                
+                // Supabase'den mevcut admin kullanıcı adını çek yaz
+                const { data } = await _supabase.from('sistem_ayarlari').select('*');
+                if (data) {
+                    data.forEach(item => {
+                        if (item.anahtar === 'admin_kadi') document.getElementById('yeniAdminKadi').value = item.deger;
+                        if (item.anahtar === 'admin_sifre') document.getElementById('yeniAdminSifre').value = item.deger;
+                    });
+                }
                 misafirListesiniCiz();
             } else {
                 adminAyarBolumu.classList.add('hidden');
@@ -442,7 +446,7 @@
             });
         }
 
-        function adminBilgileriniGuncelle() {
+        async function adminBilgileriniGuncelle() {
             const yeniKadi = document.getElementById('yeniAdminKadi').value.trim();
             const yeniSifre = document.getElementById('yeniAdminSifre').value.trim();
 
@@ -451,8 +455,9 @@
                 return;
             }
 
-            localStorage.setItem('adminKadi', yeniKadi);
-            localStorage.setItem('adminSifre', yeniSifre);
+            // Supabase veritabanında güncelle
+            await _supabase.from('sistem_ayarlari').upsert({ anahtar: 'admin_kadi', deger: yeniKadi }, { onConflict: 'anahtar' });
+            await _supabase.from('sistem_ayarlari').upsert({ anahtar: 'admin_sifre', deger: yeniSifre }, { onConflict: 'anahtar' });
 
             document.getElementById('ayarBasari').classList.remove('hidden');
             setTimeout(() => {
@@ -466,6 +471,7 @@
             seciliMahal = null;
             sessionStorage.removeItem('aktifRol');
             sessionStorage.removeItem('aktifMisafirAdi');
+            localStorage.removeItem('adminHatirla');
             ayarlarModalKapat();
             
             document.getElementById('girisEkrani').classList.remove('hidden');
